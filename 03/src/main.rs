@@ -3,6 +3,8 @@ use std::{collections::HashSet, fs};
 fn main() {
     assert!(play("sample.txt") == 157);
     println!("{}", play("data.txt"));
+    assert!(play2("sample.txt") == 70);
+    println!("{}", play2("data.txt"));
 }
 
 fn to_priority(item: &u8) -> Option<u8> {
@@ -26,6 +28,51 @@ fn play(input: &str) -> i32 {
     let sum = rucksacks
         .iter()
         .map(|sack| sack.get_duplicate_item())
+        .map(|item| to_priority(&item).unwrap() as i32)
+        .sum();
+
+    return sum;
+}
+
+fn play2(input: &str) -> i32 {
+    let data = fs::read_to_string(input).expect("unable to read files");
+
+    let chunks = data.split("\r\n").collect::<Vec<&str>>();
+
+    let rucksacks = chunks
+        .iter()
+        .map(|pack| Rucksack::new(pack))
+        .collect::<Vec<_>>();
+
+    let mut groups: Vec<(&Rucksack, &Rucksack, &Rucksack)> = Vec::new();
+    for group in 0..rucksacks.len() / 3 {
+        groups.push((
+            rucksacks.get(group * 3).expect(&format!(
+                "Group index not found {} (len {})",
+                group,
+                rucksacks.len()
+            )),
+            rucksacks.get((group * 3) + 1).unwrap(),
+            rucksacks.get((group * 3) + 2).unwrap(),
+        ))
+    }
+
+    let sum = groups
+        .iter()
+        .map(|(elf1, elf2, elf3)| {
+            let items1 = elf1.get_items();
+            let items2 = elf2.get_items();
+            let intersection = items1.intersection(&items2);
+            let all = elf3
+                .get_items()
+                .intersection(&HashSet::from_iter(intersection.copied()))
+                .copied()
+                .collect::<Vec<_>>();
+
+            let value = all.get(0).unwrap();
+
+            return *value;
+        })
         .map(|item| to_priority(&item).unwrap() as i32)
         .sum();
 
@@ -57,5 +104,16 @@ impl Rucksack {
         assert!(intersection.len() == 1);
 
         return ***intersection.get(0).unwrap();
+    }
+
+    pub fn get_items(self: &Self) -> HashSet<&u8> {
+        let front_set: HashSet<&u8> = HashSet::from_iter(self.front.iter());
+        let back_set: HashSet<&u8> = HashSet::from_iter(self.back.iter());
+
+        let union_iter = front_set.union(&back_set).copied();
+
+        let items = HashSet::from_iter(union_iter);
+
+        return items;
     }
 }
