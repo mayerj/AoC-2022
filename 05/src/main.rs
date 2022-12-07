@@ -24,11 +24,13 @@ fn get_data_structure() -> Vec<Vec<char>> {
 }
 
 fn main() {
-    assert!(play(get_sample_structure(), "sample.txt") == "CMZ");
-    println!("{}", play(get_data_structure(), "data.txt"));
+    assert!(play(get_sample_structure(), "sample.txt", true) == "CMZ");
+    println!("{}", play(get_data_structure(), "data.txt", true));
+    assert!(play(get_sample_structure(), "sample.txt", false) == "MCD");
+    println!("{}", play(get_data_structure(), "data.txt", false));
 }
 
-fn play(cargo: Vec<Vec<char>>, input: &str) -> String {
+fn play(cargo: Vec<Vec<char>>, input: &str, reverse: bool) -> String {
     let data = fs::read_to_string(input).expect("unable to read files");
 
     let mut state: Vec<Vec<char>> = Vec::new();
@@ -59,7 +61,9 @@ fn play(cargo: Vec<Vec<char>>, input: &str) -> String {
                 new_state.push(copy);
             } else if index == dest {
                 let mut moved = (src_slot[(src_slot.len() - count)..src_slot.len()]).to_vec();
-                moved.reverse();
+                if reverse {
+                    moved.reverse();
+                }
                 let copy = concat(vec![inner.clone(), moved]).clone();
                 new_state.push(copy);
             } else {
