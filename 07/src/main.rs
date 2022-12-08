@@ -40,11 +40,11 @@ fn to_path_from_part(parts: &Vec<String>, part: &str) -> String {
 }
 
 fn main() {
-    assert!(play("sample.txt") == 95437);
-    println!("{}", play("data.txt"));
+    assert!(play("sample.txt") == (95437, 24933642));
+    println!("{:?}", play("data.txt"));
 }
 
-fn play(input: &str) -> usize {
+fn play(input: &str) -> (usize, usize) {
     let data = fs::read_to_string(input).expect("unable to read files");
 
     let entries = data.split("$");
@@ -143,19 +143,32 @@ fn play(input: &str) -> usize {
         }
     }
 
+    let mut all_sizes: HashMap<String, usize> = HashMap::new();
     let mut sizes: Vec<usize> = Vec::new();
 
     for (key, value) in &flat_dirs {
         let size = compute_recursive_size(&value, &flat_dirs);
 
         println!("{}: {}", key, size);
-
+        all_sizes.insert(key.to_string(), size);
         if size < 100000 {
             sizes.push(size);
         }
     }
 
-    return sizes.iter().sum();
+    let total_disk_size = 70000000;
+    let needed_unused = 30000000;
+
+    let needed_size = needed_unused - (total_disk_size - all_sizes["/"]);
+
+    let mut possibles: Vec<(&String, &usize)> = all_sizes
+        .iter()
+        .filter(|(key, value)| **value >= needed_size)
+        .collect();
+
+    possibles.sort_by(|x, y| x.1.cmp(y.1));
+
+    return (sizes.iter().sum(), *possibles.get(0).expect("exists").1);
 }
 
 fn compute_recursive_size(directory: &Directory, flat_map: &HashMap<String, Directory>) -> usize {
