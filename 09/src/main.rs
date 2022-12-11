@@ -1,10 +1,12 @@
-use std::{collections::HashSet, fs};
+use std::{collections::HashSet, fmt::Debug, fs};
 
-use rope::{Point, Rope};
+use rope::{LongRope, Point, Rope};
+
+use crate::rope::Ropelike;
 mod rope;
 
 fn main() {
-    simple_logger::init_with_level(log::Level::Debug).unwrap();
+    simple_logger::init_with_level(log::Level::Info).unwrap();
 
     assert_eq!(
         Rope::new_with_tail((0, 0), (0, -1)).move_head('U'),
@@ -20,18 +22,28 @@ fn main() {
 
     assert_eq!(play("sample.txt"), 13);
     println!("{:?}", play("data.txt"));
+    assert_eq!(play2("sample.txt"), 1);
+    assert_eq!(play2("sample2.txt"), 36);
+    println!("{:?}", play2("data.txt"));
 }
 
 fn play(input: &str) -> usize {
+    return play_internal::<Rope>(input);
+}
+fn play2(input: &str) -> usize {
+    return play_internal::<LongRope>(input);
+}
+
+fn play_internal<T: Ropelike + Debug>(input: &str) -> usize {
     let data = fs::read_to_string(input).expect("unable to read files");
 
-    let mut states: Vec<Rope> = vec![Rope::new(0, 0)];
+    let mut states: Vec<T> = vec![T::new(0, 0)];
     for line in data.lines() {
         let (direction, count) = parse_line(line);
 
         println!("{} - {}", direction, count);
         for _i in 0..count {
-            let state: &Rope = states.get(states.len() - 1).unwrap();
+            let state: &T = states.get(states.len() - 1).unwrap();
             let new_state = state.move_head(direction);
 
             log::debug!("{:?} to {:?}", state, new_state);
@@ -45,7 +57,7 @@ fn play(input: &str) -> usize {
 
     let mut locations: HashSet<Point> = HashSet::new();
     for state in states {
-        locations.insert(state.tail_location);
+        locations.insert(state.get_tail().clone());
     }
 
     return locations.len();

@@ -1,10 +1,21 @@
 use core::fmt;
 use std::ops;
 
+pub trait Ropelike {
+    fn new(x: i32, y: i32) -> Self;
+    fn move_head(&self, direction: char) -> Self;
+    fn get_tail(&self) -> &Point;
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Rope {
     pub head_location: Point,
     pub tail_location: Point,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct LongRope {
+    pub knots: Vec<Point>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -23,20 +34,25 @@ impl fmt::Debug for Point {
 }
 
 impl Rope {
-    pub fn new(x: i32, y: i32) -> Self {
-        return Rope {
-            head_location: Point::new(x, y),
-            tail_location: Point::new(x, y),
-        };
-    }
     pub fn new_with_tail(head: (i32, i32), tail: (i32, i32)) -> Self {
         return Rope {
             head_location: Point::new(head.0, head.1),
             tail_location: Point::new(tail.0, tail.1),
         };
     }
+}
 
-    pub fn move_head(self: Self, direction: char) -> Rope {
+impl LongRope {}
+
+impl Ropelike for Rope {
+    fn new(x: i32, y: i32) -> Self {
+        return Rope {
+            head_location: Point::new(x, y),
+            tail_location: Point::new(x, y),
+        };
+    }
+
+    fn move_head(self: &Self, direction: char) -> Rope {
         let new_head_location = self.head_location + direction;
 
         let new_tail_location: Point;
@@ -61,6 +77,51 @@ impl Rope {
             head_location: new_head_location,
             tail_location: new_tail_location,
         };
+    }
+
+    fn get_tail(self: &Self) -> &Point {
+        return &self.tail_location;
+    }
+}
+
+impl Ropelike for LongRope {
+    fn new(x: i32, y: i32) -> Self {
+        return LongRope {
+            knots: [Point::new(x, y); 10].to_vec(),
+        };
+    }
+    fn move_head(self: &Self, direction: char) -> LongRope {
+        let mut knots: Vec<Point> = Vec::new();
+        knots.push(*self.knots.get(0).unwrap() + direction);
+
+        for (index, knot) in self.knots[1..self.knots.len()].iter().enumerate() {
+            let new_head_location = knots[index];
+            let new_tail_location: Point;
+            if !new_head_location.is_touching(*knot) {
+                new_tail_location = compute_new_tail(&new_head_location, &knot);
+
+                log::debug!(
+                    "{:?} - {:?} - {:?} - {:?} - {:?}",
+                    self.knots[index],
+                    direction,
+                    new_head_location,
+                    knot,
+                    new_tail_location
+                );
+
+                assert!(new_head_location.is_touching(new_tail_location));
+            } else {
+                new_tail_location = knot.clone();
+            }
+
+            knots.push(new_tail_location);
+        }
+
+        return LongRope { knots: knots };
+    }
+
+    fn get_tail(self: &Self) -> &Point {
+        return self.knots.last().unwrap();
     }
 }
 
