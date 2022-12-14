@@ -21,6 +21,16 @@ fn main() {
             &HashSet::from([20usize, 60, 100, 140, 180, 220])
         )
     );
+    assert_eq!(
+        play2("sample2.txt"),
+        "##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######....."
+    );
+    println!("{:?}", play2("data.txt"));
 }
 
 fn play(input: &str, cycles_to_sum: &HashSet<usize>) -> isize {
@@ -43,4 +53,48 @@ fn play(input: &str, cycles_to_sum: &HashSet<usize>) -> isize {
     }
 
     return sum;
+}
+
+fn play2(input: &str) -> String {
+    let data = fs::read_to_string(input).expect("unable to read files");
+
+    let mut cpu: Cpu = Cpu::load_from_lines(data.lines());
+
+    let mut image: Vec<String> = Vec::new();
+    let mut line: Vec<char> = Vec::new();
+    for cycle_count in 0..40 * 6 {
+        let cycle: isize = cycle_count % 40;
+
+        let sprite_pos = cpu.registers.x % 40;
+
+        let sprite_range = sprite_pos - 1..=sprite_pos + 1;
+        if sprite_range.contains(&cycle) {
+            line.push('#');
+        } else {
+            line.push('.');
+        }
+
+        log::debug!(
+            "position {} sprite at {:?} ({})",
+            cycle,
+            sprite_range,
+            line.last().unwrap()
+        );
+
+        cpu.run_cycle();
+
+        if cycle == 39 {
+            assert_eq!(line.len(), 40);
+            image.push(String::from_iter(line.iter()));
+            line = Vec::new();
+        }
+    }
+
+    if line.len() > 0 {
+        image.push(String::from_iter(line.iter()));
+    }
+
+    let result = image.join("\n");
+    println!("{}", result);
+    return result;
 }
